@@ -28,6 +28,15 @@ class VWAP(Functor):
     def forward(self, tensor_x, tensor_y):
         return vpf.vwap(tensor_x, tensor_y, window=self._window)
 
+class VWAP_returns(Functor):
+    def __init__(self, window=1):
+        super(VWAP_returns, self).__init__()
+        self._window = window
+            
+    def forward(self, tensor_x, tensor_y):
+        """inputs are close and VWAP"""
+        return (tensor_x - tsf.shift(tensor_y, window=self._window)) / tsf.shift(tensor_y, window=self._window)
+
 class VolumeReturnsCorr(Functor):
     
     def __init__(self, window):
