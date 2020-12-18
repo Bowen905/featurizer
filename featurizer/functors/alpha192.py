@@ -25,7 +25,7 @@ class Alpha003(Functor):
     def forward(self, close_ts, low_ts, high_ts):
         cond1 = close_ts == tsf.shift(close_ts, 1)
         cond2 = close_ts > tsf.shift(close_ts, 1)
-        zeros = torch.zeros(close_ts.size())
+        zeros = torch.zeros_like(close_ts)
         consequance1 = close_ts - torch.min(low_ts, tsf.shift(close_ts, 1))
         consequance2 = close_ts - torch.max(high_ts, tsf.shift(close_ts, 1))
         inner = torch.where(cond2, consequance1, consequance2)
@@ -60,16 +60,16 @@ class Alpha005(Functor):
 
 # class Alpha007(Functor): # what max?
 #
-#     def forward(self, vmap_ts, close_ts, volume_ts):
-#         output_tensor = ((tsf.rank(tsf.rolling_max((vmap_ts - close_ts), 3)) + tsf.rank(
-#             ((vmap_ts - close_ts), 3))) * tsf.rank(tsf.diff(volume_ts, 3)))
+#     def forward(self, vwap_ts, close_ts, volume_ts):
+#         output_tensor = ((tsf.rank(tsf.rolling_max((vwap_ts - close_ts), 3)) + tsf.rank(
+#             ((vwap_ts - close_ts), 3))) * tsf.rank(tsf.diff(volume_ts, 3)))
 #         return output_tensor
 
 
 class Alpha008(Functor):
 
-    def forward(self, vmap_ts, high_ts, low_ts):
-        output_tensor = tsf.rank(tsf.diff(((((high_ts + low_ts) / 2) * 0.2) + (vmap_ts * 0.8)), 4) * -1)
+    def forward(self, vwap_ts, high_ts, low_ts):
+        output_tensor = tsf.rank(tsf.diff(((((high_ts + low_ts) / 2) * 0.2) + (vwap_ts * 0.8)), 4) * -1)
         return output_tensor
 
 
@@ -101,16 +101,16 @@ class Alpha011(Functor):
 
 class Alpha012(Functor):
 
-    def forward(self, open_ts, close_ts, vmap_ts):
-        output_tensor = (tsf.rank((open_ts - (tsf.rolling_sum_(vmap_ts, 10) / 10)))) * (
-                -1 * (tsf.rank(abs((close_ts - vmap_ts)))))
+    def forward(self, open_ts, close_ts, vwap_ts):
+        output_tensor = (tsf.rank((open_ts - (tsf.rolling_sum_(vwap_ts, 10) / 10)))) * (
+                -1 * (tsf.rank(abs((close_ts - vwap_ts)))))
         return output_tensor
 
 
 class Alpha013(Functor):
 
-    def forward(self, high_ts, low_ts, vmap_ts):
-        output_tensor = (((high_ts * low_ts) ** 0.5) - vmap_ts)
+    def forward(self, high_ts, low_ts, vwap_ts):
+        output_tensor = (((high_ts * low_ts) ** 0.5) - vwap_ts)
         return output_tensor
 
 
@@ -155,7 +155,7 @@ class Alpha019(Functor):
         cond1 = close_ts < tsf.shift(close_ts, 5)
         cond2 = close_ts == tsf.shift(close_ts, 5)
         inner = (close_ts - tsf.shift(close_ts, 5)) / tsf.shift(close_ts, 5)
-        zeros = torch.zeros(close_ts.size())
+        zeros = torch.zeros_like(close_ts)
         output_tensor = torch.where(cond1, inner, (close_ts - tsf.shift(close_ts, 5)) / close_ts)
         output_tensor = torch.where((~cond1 & cond2), zeros, output_tensor)
         return output_tensor
@@ -245,7 +245,7 @@ class Alpha038(Functor):
 
     def forward(self, high_ts):
         cond = tsf.rolling_mean(high_ts, 20) < high_ts
-        zeros = torch.zeros(high_ts.size())
+        zeros = torch.zeros_like(high_ts)
         output_tensor = torch.where(cond, (-1 * tsf.diff(high_ts, 2)), zeros)
         return output_tensor
 
@@ -254,7 +254,7 @@ class Alpha040(Functor):
 
     def forward(self, close_ts, volume_ts):
         cond1 = close_ts > tsf.shift(close_ts, 1)
-        zeros = torch.zeros(close_ts.size())
+        zeros = torch.zeros_like(close_ts)
         inner1 = torch.where(cond1, volume_ts, zeros)
         cond2 = close_ts <= tsf.shift(close_ts, 1)
         inner2 = tsf.rolling_sum_(torch.where(cond2, volume_ts, zeros), 20)
@@ -382,7 +382,7 @@ class Alpha059(Functor):
 
     def forward(self, close_ts, low_ts, high_ts):
         cond1 = tsf.diff(close_ts, 1) > 0
-        zeros = torch.zeros(close_ts.size())
+        zeros = torch.zeros_like(close_ts)
         inner = torch.where(cond1, torch.min(low_ts, tsf.shift(close_ts, 1)),
                             torch.max(high_ts, tsf.shift(close_ts, 1)))
         cond2 = tsf.diff(close_ts, 1) == 0
@@ -518,7 +518,7 @@ class Alpha093(Functor):
 
     def forward(self, open_ts, low_ts):
         cond = open_ts >= tsf.shift(open_ts, 1)
-        zeros = torch.zeros(open_ts.size())
+        zeros = torch.zeros_like(open_ts)
         inner = torch.where(cond, zeros, torch.max((open_ts - low_ts), (open_ts - tsf.shift(open_ts, 1))))
         output_tensor = tsf.rolling_sum_(inner, 20)
         return output_tensor
@@ -724,7 +724,7 @@ class Alpha127(Functor):
 class Alpha129(Functor):
 
     def forward(self, high_ts, close_ts):
-        zeros = torch.zeros(high_ts.size())
+        zeros = torch.zeros_like(high_ts)
         cond = tsf.diff(close_ts, 1) < 0
         output_tensor = tsf.rolling_sum_(torch.where(cond, torch.abs(tsf.diff(close_ts, 1)), zeros), 12)
         return output_tensor
@@ -843,7 +843,7 @@ class Alpha167(Functor):
 
     def forward(self, close_ts):
         cond = tsf.diff(close_ts, 1) > 0
-        zeros = torch.zeros(close_ts.size())
+        zeros = torch.zeros_like(close_ts)
         output_tensor = tsf.rolling_sum_(torch.where(cond, close_ts - tsf.shift(close_ts, 1), zeros), 12)
         return output_tensor
 
@@ -874,7 +874,7 @@ class Alpha171(Functor):
 class Alpha172(Functor):
 
     def forward(self, high_ts, low_ts, close_ts):
-        zeros = torch.zeros(high_ts.size())
+        zeros = torch.zeros_like(high_ts)
         LD = tsf.shift(low_ts, 1) - low_ts
         HD = high_ts - tsf.shift(high_ts, 1)
         TR = torch.max(torch.max(high_ts - low_ts, torch.abs(high_ts - tsf.shift(close_ts, 1))),
@@ -965,7 +965,7 @@ class Alpha186(Functor):
 class Alpha187(Functor):
 
     def forward(self, close_ts, low_ts, high_ts):
-        zeros = torch.zeros(low_ts.size())
+        zeros = torch.zeros_like(low_ts)
         LD = tsf.shift(low_ts, 1) - low_ts
         HD = high_ts - tsf.shift(high_ts, 1)
         TR = torch.max(torch.max(high_ts - low_ts, torch.abs(high_ts - tsf.shift(close_ts, 1))),
@@ -990,7 +990,7 @@ class Alpha187(Functor):
 class Alpha188(Functor):
 
     def forward(self, open_ts, high_ts):
-        zeros = torch.zeros(open_ts.size())
+        zeros = torch.zeros_like(open_ts)
         cond = open_ts <= tsf.shift(open_ts, 1)
         inner = torch.where(cond, zeros, torch.max((high_ts - open_ts), (open_ts - tsf.shift(open_ts, 1))))
         output_tensor = tsf.rolling_sum_(inner, 20)

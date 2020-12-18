@@ -196,7 +196,7 @@ class Alpha023(Functor):
 
     def forward(self, high_ts):
         cond = (tsf.rolling_mean_(high_ts, 20) < high_ts).squeeze()
-        zeros = torch.zeros(high_ts.size()).squeeze()
+        zeros = torch.zeros_like(high_ts).squeeze()
         result = torch.where(cond, -1 * tsf.diff(high_ts, 2).squeeze(), zeros)
         return result
 
@@ -351,7 +351,7 @@ class Alpha046(Functor):
         cond_1 = inner < 0
         cond_2 = inner > 0.25
         alpha = (-1 * tsf.diff(close_ts).squeeze())
-        ones = torch.ones(close_ts.size()).squeeze()
+        ones = torch.ones_like(close_ts).squeeze()
         result = torch.where((cond_1 | cond_2), -1 * ones, alpha)
         return result
 
@@ -363,7 +363,7 @@ class Alpha049(Functor):
                 (tsf.shift(close_ts, 10) - close_ts) / 10).squeeze())
         alpha = (-1 * tsf.diff(close_ts)).squeeze()
         cond = (inner < -0.1)
-        ones = torch.ones(close_ts.size()).squeeze()
+        ones = torch.ones_like(close_ts).squeeze()
         result = torch.where(cond, ones, alpha)
         return result
 
@@ -374,7 +374,7 @@ class Alpha051(Functor):
         inner = (((tsf.shift(close_ts, 20) - tsf.shift(close_ts, 10)) / 10) - (
                 (tsf.shift(close_ts, 10) - close_ts) / 10)).squeeze()
         alpha = (-1 * tsf.diff(close_ts)).squeeze()
-        ones = torch.ones(close_ts.size()).squeeze()
+        ones = torch.ones_like(close_ts).squeeze()
         cond = (inner < -0.05).squeeze()
         result = torch.where(cond, ones, alpha)
         return result
@@ -392,7 +392,7 @@ class Alpha053(Functor):
 
     def forward(self, high_ts, low_ts, close_ts):
         inner = (close_ts - low_ts).squeeze()
-        constant = 0.0001 * torch.ones(close_ts.size()).squeeze()
+        constant = 0.0001 * torch.ones_like(close_ts).squeeze()
         cond = inner == 0
         inner = torch.where(cond, constant, inner)
         result = -1 * tsf.diff((((close_ts - low_ts) - (high_ts - close_ts)).squeeze() / inner), 9)
@@ -403,7 +403,7 @@ class Alpha054(Functor):
 
     def forward(self, open_ts, high_ts, low_ts, close_ts):
         inner = (low_ts - high_ts).squeeze()
-        constant = 0.0001 * torch.ones(close_ts.size()).squeeze()
+        constant = 0.0001 * torch.ones_like(close_ts).squeeze()
         cond = inner == 0
         inner = torch.where(cond, constant, inner)
         result = -1 * ((low_ts - close_ts) * (open_ts ** 5)).squeeze() / (inner * (close_ts ** 5).squeeze())
@@ -413,8 +413,11 @@ class Alpha054(Functor):
 class Alpha055(Functor):
 
     def forward(self, high_ts, low_ts, close_ts, volume_ts):
-        divisor = (tsf.rolling_max(high_ts, 12) - tsf.rolling_min(low_ts, 12)).replace(0, 0.0001)
-        inner = (close_ts - tsf.ts_min(low_ts, 12)) / (divisor)
-        ts = tsf.rolling_corr(tsf.rank(inner), tsf.rank(volume_ts), 6)
+        inner = (tsf.rolling_max(high_ts, 12) - tsf.rolling_min(low_ts, 12)).squeeze()
+        cond = inner == 0
+        constant = 0.0001 * torch.ones_like(high_ts).squeeze()
+        divisor = torch.where(cond, constant, inner)
+        inner_ = (close_ts - tsf.rolling_min(low_ts, 12)) / (divisor)
+        ts = tsf.rolling_corr(tsf.rank(inner_), tsf.rank(volume_ts), 6)
         output_tensor = -1 * ts
         return output_tensor
