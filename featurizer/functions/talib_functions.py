@@ -122,13 +122,15 @@ def candledown(open_ts, close_ts, low_ts):
 
 
 def atr(high_ts, low_ts, close_ts, timeperiod=14):
-    true_range = torch.max(high_ts, tsf.shift(close_ts, window=1)) - torch.min(low_ts, tsf.shift(close_ts, window=1))
+    true_range_ = torch.max(high_ts - low_ts, torch.abs(high_ts - tsf.shift(close_ts, window=1)))
+    true_range = torch.max(true_range_, torch.abs(low_ts - tsf.shift(close_ts, window=1)))
     atr = tsf.rolling_mean_(true_range, window=timeperiod)
     return atr
 
 
 def natr(high_ts, low_ts, close_ts, timeperiod=14):
-    true_range = torch.max(high_ts, tsf.shift(close_ts, window=1)) - torch.min(low_ts, tsf.shift(close_ts, window=1))
+    true_range_ = torch.max(high_ts - low_ts, torch.abs(high_ts - tsf.shift(close_ts, window=1)))
+    true_range = torch.max(true_range_, torch.abs(low_ts - tsf.shift(close_ts, window=1)))
     TRange_max = tsf.rolling_max(true_range, window=timeperiod)
     TRange_min = tsf.rolling_min(true_range, window=timeperiod)
     natr = tsf.rolling_mean_((true_range - TRange_min) / (TRange_max - TRange_min), window=timeperiod)
