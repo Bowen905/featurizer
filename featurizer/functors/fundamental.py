@@ -17,7 +17,7 @@
 
 import torch
 from featurizer.interface import Functor
-from featurizer.functions.calc_residual import calc_residual3d
+from featurizer.functions.calc_residual import forecast_residual3d
 
 class AbsAccruals(Functor):
     
@@ -67,7 +67,7 @@ class SizeNL(Functor):
         log_size = torch.log(size)
         cube_log_size = torch.pow(log_size, 3)
         # input order in calc_residual is x,then y
-        residual = calc_residual3d(log_size, cube_log_size, window_train=self._window_train, window_test=self._window_test,keep_first_train_nan=True)
+        residual = forecast_residual3d(log_size, cube_log_size, window_train=self._window_train, window_test=self._window_test,keep_first_train_nan=True)
         return residual.squeeze(-1).transpose(0,1)
 
 if __name__ == "__main__":
