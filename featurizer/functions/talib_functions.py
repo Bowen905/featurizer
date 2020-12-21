@@ -122,45 +122,57 @@ def candledown(open_ts, close_ts, low_ts):
 
 
 def atr(high_ts, low_ts, close_ts, timeperiod=14):
-    true_range = torch.max(high_ts, tsf.shift(close_ts, window=1)) - torch.min(low_ts, tsf.shift(close_ts, window=1))
+    true_range_ = torch.max(high_ts - low_ts, torch.abs(high_ts - tsf.shift(close_ts, window=1)))
+    true_range = torch.max(true_range_, torch.abs(low_ts - tsf.shift(close_ts, window=1)))
     atr = tsf.rolling_mean_(true_range, window=timeperiod)
     return atr
 
 
 def natr(high_ts, low_ts, close_ts, timeperiod=14):
-    true_range = torch.max(high_ts, tsf.shift(close_ts, window=1)) - torch.min(low_ts, tsf.shift(close_ts, window=1))
+    true_range_ = torch.max(high_ts - low_ts, torch.abs(high_ts - tsf.shift(close_ts, window=1)))
+    true_range = torch.max(true_range_, torch.abs(low_ts - tsf.shift(close_ts, window=1)))
     TRange_max = tsf.rolling_max(true_range, window=timeperiod)
     TRange_min = tsf.rolling_min(true_range, window=timeperiod)
     natr = tsf.rolling_mean_((true_range - TRange_min) / (TRange_max - TRange_min), window=timeperiod)
     return natr
 
 def dmi(high_ts, low_ts, close_ts, timeperiod=14):
-    up = high_ts - tsf.shift(high_ts, window=1)
-    down = tsf.shift(low_ts, window=1) - low_ts
-    zero = torch.zeros_like(high_ts, dtype=high_ts.dtype, device=high_ts.device)
-    PDM = torch.where(up>torch.max(down, zero), up, zero)
-    MDM = torch.where(down>torch.max(up, zero), down, zero)
-    TR14 = tsf.rolling_mean_(torch.max(high_ts, tsf.shift(close_ts, window=1)) - torch.min(low_ts, tsf.shift(close_ts, window=1)), window=14)
-    PDI = PDM / TR14[-1] * 100
-    MDI = MDM / TR14[-1] * 100
-    DX = torch.abs(PDI - MDI) / torch.abs(PDI + MDI)
-    ADX = tsf.ema(DX, window=timeperiod)
+    zero = torch.zeros_like(high_ts)
+    upmove = high_ts - tsf.shift(high_ts, window=1)
+    downmove = tsf.shift(low_ts, window=1) - low_ts
+
+    cond_1 = upmove > downmove
+    cond_2 = upmove > 0
+    cond_3 = cond_1 & cond_2
+    PDM = torch.where(cond_3, upmove, zero)
+
+    cond_4 = downmove > upmove
+    cond_5 = downmove > 0
+    cond_6 = cond_4 & cond_5
+    MDM = torch.where(cond_6, downmove, zero)
+
+    true_range = torch.max(high_ts, tsf.shift(close_ts, window=1)) - torch.min(low_ts, tsf.shift(close_ts, window=1))
+    ATR = tsf.rolling_mean_(true_range, window=timeperiod)
+    PDI = 100 * tsf.ema(PDM/ATR, window=timeperiod)
+    MDI = 100 * tsf.ema(MDM/ATR, window=timeperiod)
+    ADX = 100 * tsf.ema(torch.abs((PDI - MDI)/(PDI + MDI)), window=timeperiod)
     ADXR = tsf.ema(ADX, window=timeperiod)
-    return PDM, MDM, PDI, MDI, DX, ADX, ADXR
+    return PDM, MDM, PDI, MDI, ADX, ADXR
 
 
 def apo(close_ts, fastperiod=12, slowperiod=26, matype=0):
     import talib
     close_np = close_ts.cpu().detach().numpy()
     close_df = pd.DataFrame(close_np)
-    apo = close_df.apply(lambda x: talib.APO(x, fastperiod=12, slowperiod=26, matype=0))
+    apo = close_df.apply(lambda x: talib.APO(x, fastperiod=fastperiod, slowperiod=slowperiod, matype=matype))
     
     apo_ts = torch.tensor(apo.values, dtype=close_ts.dtype, device=close_ts.device)
     return apo_ts
 
-def cci(high_ts, low_ts, close_ts, timeperiod=14):
+def cci(high_ts, low_ts, close_ts, timeperiod=20):
     TP = (high_ts + low_ts + close_ts) / 3
-    cci = (TP - tsf.rolling_mean_(TP, window=timeperiod)) / (0.015 * tsf.rolling_std(TP, window=timeperiod))
+    mean_deviation = tsf.rolling_sum_(torch.abs(close_ts - tsf.rolling_mean_(close_ts, window=timeperiod)), window=timeperiod) / timeperiod
+    cci = (TP - tsf.rolling_mean_(TP, window=timeperiod)) / (0.015 * mean_deviation)
     return cci
 
 def cmo(close_ts, timeperiod=14):
@@ -172,14 +184,14 @@ def cmo(close_ts, timeperiod=14):
     CMO_ts = torch.tensor(cmo.values, dtype=close_ts.dtype, device=close_ts.device)
     return CMO_ts
 
-def mfi(high_ts, low_ts, close_ts, total_turnover_ts, timeperiod=14):
+def mfi(high_ts, low_ts, close_ts, volume_ts, timeperiod=14):
     TP = (high_ts + low_ts + close_ts) / 3
-    MF = TP * total_turnover_ts
-    zero = torch.zeros_like(high_ts)
-    PMF = torch.where(MF > tsf.shift(MF, window=1), MF, zero)
-    NMF = torch.where(MF < tsf.shift(MF, window=1), MF, zero)
-    MR = tsf.rolling_sum_(PMF, window=timeperiod) / tsf.rolling_sum_(NMF, window=timeperiod)
-    MFI = 100 - (100 / (1 + MR))
+    MF = TP * volume_ts
+    zero = torch.zeros_like(MF)
+    PMF = torch.where(TP > tsf.shift(TP, window=1), MF, zero)
+    NMF = torch.where(TP < tsf.shift(TP, window=1), MF, zero)
+    MFR = tsf.rolling_sum_(PMF, window=timeperiod) / tsf.rolling_sum_(NMF, window=timeperiod)
+    MFI = 100 - (100 / (1 + MFR))
     return MFI
 
 def stochrsi(close_ts, timeperiod=14, fastk_period=5, fastd_period=3, fastd_matype=0):
@@ -213,7 +225,7 @@ def uos(high_ts, low_ts, close_ts, timeperiod1=7, timeperiod2=14, timeperiod3=28
 def wr(high_ts, low_ts, close_ts, timeperiod=14):
     HT = tsf.rolling_max(high_ts, window=timeperiod)
     LT = tsf.rolling_min(low_ts, window=timeperiod)
-    WR = (HT - close_ts) / (HT - LT) * 100
+    WR = (HT - close_ts) / (HT - LT) * (-100)
     return WR
 
 def dema(close_ts, timeperiod=30):
@@ -279,19 +291,20 @@ def wma(close_ts, timeperiod=30):
     wma_ts = torch.tensor(wma.values, dtype=close_ts.dtype, device=close_ts.device)
     return wma_ts
 
-def ad(high_ts, low_ts, close_ts, volume_ts, fastperiod=3, slowperiod=10):
+def ad(high_ts, low_ts, close_ts, volume_ts, timeperiod=5, fastperiod=3, slowperiod=10):
     zero = torch.zeros_like(high_ts, dtype=high_ts.dtype, device=high_ts.device)
-    CLV = torch.where(high_ts == low_ts, zero, (2*close_ts-high_ts-low_ts)/(high_ts-low_ts))
-    AD = tsf.rolling_sum_(volume_ts*CLV, window=2)
-    AD[0] = CLV[0]
+    money_flow_multiplier = torch.where(high_ts == low_ts, zero, (2*close_ts-high_ts-low_ts)/(high_ts-low_ts))
+    money_flow_volume = money_flow_multiplier * volume_ts
+    AD_ = tsf.rolling_sum_(money_flow_volume, window=timeperiod)
+    AD = tsf.shift(AD_, window=1) + money_flow_volume
     ADOSC = tsf.ema(AD, window=fastperiod) - tsf.ema(AD, window=slowperiod)
     return AD, ADOSC
 
 def obv(close_ts, volume_ts):
     zero = torch.zeros_like(volume_ts, dtype=volume_ts.dtype, device=volume_ts.device)
     volume_new = torch.where(close_ts == tsf.shift(close_ts, window=1), zero, torch.where(close_ts > tsf.shift(close_ts, window=1), volume_ts, -volume_ts))
-    volume_new[0] = volume_ts[0]
-    OBV = tsf.rolling_sum_(volume_new, window=2)
+    OBV = tsf.shift(volume_ts, window=1) + volume_new
+    OBV[0] = volume_ts[0]
     return OBV
 
 def TSF(close_ts, timeperiod=14):
@@ -299,7 +312,7 @@ def TSF(close_ts, timeperiod=14):
     close_np = close_ts.cpu().detach().numpy()
     close_df = pd.DataFrame(close_np)
     TSF = close_df.apply(lambda x: talib.TSF(x, timeperiod=14))
-    TSF_ts = torch.tensor(tsf.values, dtype=close_ts.dtype, device=close_ts.device)
+    TSF_ts = torch.tensor(TSF.values, dtype=close_ts.dtype, device=close_ts.device)
     return TSF_ts
 
 def HT_dcperiod(close_ts):
