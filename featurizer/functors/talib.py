@@ -108,14 +108,14 @@ class MACDEXTRelated(Functor):
     def forward(self, tensor_close):
         DIF, DEA, MACD = talib_func.macdext(tensor_close, fastperiod=self.fastperiod, fastmatype=self.fastmatype, slowperiod=self.slowperiod, slowmatype=self.slowmatype, signalperiod=self.signalperiod, signalmatype=self.signalmatype)
         
-        norm_DIF = torch.clamp(DIF, min=-1, max=1).squeeze(-1)
-        norm_DEA = torch.clamp(DEA, min=-1, max=1).squeeze(-1)
-        norm_MACD = torch.clamp(MACD, min=-1, max=1).squeeze(-1)
+        norm_DIF_ext = torch.clamp(DIF, min=-1, max=1).squeeze(-1)
+        norm_DEA_ext = torch.clamp(DEA, min=-1, max=1).squeeze(-1)
+        norm_MACD_ext = torch.clamp(MACD, min=-1, max=1).squeeze(-1)
         
-        norm_DIF_diff = torch.clamp(tsf.diff(DIF), min=-1, max=1).squeeze(-1)
-        norm_DEA_diff = torch.clamp(tsf.diff(DEA), min=-1, max=1).squeeze(-1)
-        norm_MACD_diff = torch.clamp(tsf.diff(MACD), min=-1, max=1).squeeze(-1)
-        return norm_DIF, norm_DEA, norm_MACD, norm_DIF_diff, norm_DEA_diff, norm_MACD_diff
+        norm_DIF_ext_diff = torch.clamp(tsf.diff(DIF), min=-1, max=1).squeeze(-1)
+        norm_DEA_ext_diff = torch.clamp(tsf.diff(DEA), min=-1, max=1).squeeze(-1)
+        norm_MACD_ext_diff = torch.clamp(tsf.diff(MACD), min=-1, max=1).squeeze(-1)
+        return norm_DIF_ext, norm_DEA_ext, norm_MACD_ext, norm_DIF_ext_diff, norm_DEA_ext_diff, norm_MACD_ext_diff
 
 class MACDFIXRelated(Functor):
     
@@ -125,14 +125,14 @@ class MACDFIXRelated(Functor):
     def forward(self, tensor_close):
         DIF, DEA, MACD = talib_func.macdfix(tensor_close, signalperiod=9)
         
-        norm_DIF = torch.clamp(DIF, min=-1, max=1).squeeze(-1)
-        norm_DEA = torch.clamp(DEA, min=-1, max=1).squeeze(-1)
-        norm_MACD = torch.clamp(MACD, min=-1, max=1).squeeze(-1)
+        norm_DIF_fix = torch.clamp(DIF, min=-1, max=1).squeeze(-1)
+        norm_DEA_fix = torch.clamp(DEA, min=-1, max=1).squeeze(-1)
+        norm_MACD_fix = torch.clamp(MACD, min=-1, max=1).squeeze(-1)
         
-        norm_DIF_diff = torch.clamp(tsf.diff(DIF), min=-1, max=1).squeeze(-1)
-        norm_DEA_diff = torch.clamp(tsf.diff(DEA), min=-1, max=1).squeeze(-1)
-        norm_MACD_diff = torch.clamp(tsf.diff(MACD), min=-1, max=1).squeeze(-1)
-        return norm_DIF, norm_DEA, norm_MACD, norm_DIF_diff, norm_DEA_diff, norm_MACD_diff
+        norm_DIF_fix_diff = torch.clamp(tsf.diff(DIF), min=-1, max=1).squeeze(-1)
+        norm_DEA_fix_diff = torch.clamp(tsf.diff(DEA), min=-1, max=1).squeeze(-1)
+        norm_MACD_fix_diff = torch.clamp(tsf.diff(MACD), min=-1, max=1).squeeze(-1)
+        return norm_DIF_fix, norm_DEA_fix, norm_MACD_fix, norm_DIF_fix_diff, norm_DEA_fix_diff, norm_MACD_fix_diff
 
 class PPO(Functor):
     
