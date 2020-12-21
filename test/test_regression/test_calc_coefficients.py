@@ -15,10 +15,10 @@ print("x shape:{}".format(x_ts.shape))
 print("y shape:{}".format(y_ts.shape))
 print("what the meaning of that shape?, understanding it first")
 
-from featurizer.functions.calc_residual import get_algebra_coef_ts, get_residual_ts, calc_residual3d_ts
+from featurizer.functions.calc_residual import get_algebra_coef_ts, get_residual_ts, forecast_residual3d_ts
 
 output_param = get_algebra_coef_ts(x=x_ts, y=y_ts)
 
 residual_ts = get_residual_ts(x=x_ts, y=y_ts, param=output_param)
 
-rolling_fwd_predicted_residual = calc_residual3d_ts(x_tensor=x_ts, y_tensor=y_ts, window_train=10, window_test=5, keep_first_train_nan=True, split_end=True)
+rolling_fwd_predicted_residual = forecast_residual3d_ts(x_tensor=x_ts, y_tensor=y_ts, window_train=10, window_test=5, keep_first_train_nan=True, split_end=True)
