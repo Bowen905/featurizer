@@ -224,26 +224,24 @@ class PriceVolume(Functor):
         pv = rocp * v_pct_change_atan
         return pv
 
-class PctChangeNight(Functor):
-    def __init__(self, window):
+class ReturnOvernight(Functor):
+    def __init__(self, window=1):
         self._window = window
         
     def forward(self, open, close):
         shift_tensor = tsf.shift(close, window=1)
         diff = open - shift_tensor
         output = diff.div(shift_tensor)
-        output_ts = tsf.pct_change(output, period=self._window)
-        return output_ts
+        return output
 
-class PctChangeIntra(Functor):
-    def __init__(self, window):
+class ReturnIntraday(Functor):
+    def __init__(self, window=1):
         self._window = window
         
     def forward(self, open, close):
         diff = close - open
         output = diff.div(open)
-        output_ts = tsf.pct_change(output, period=self._window)
-        return output_ts
+        return output
 
 class CandleUp(Functor):
     

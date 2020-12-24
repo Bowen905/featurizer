@@ -19,6 +19,86 @@ import torch
 from featurizer.interface import Functor
 from featurizer.functions.calc_residual import forecast_residual3d
 
+class NetWorkingCapital(Functor):
+    
+    def forward(self, total_current_assets, total_current_liability):
+        return total_current_assets - total_current_liability
+
+class RetainedEarnings(Functor):
+    
+    def forward(self, surplus_reserve_fund, retained_profit):
+        return surplus_reserve_fund + retained_profit
+    
+class NetInterestExpense(Functor):
+    
+    def forward(self, interest_expense, interest_income):
+        return interest_expense - interest_income
+    
+class InterestFreeCurrentLiability(Functor):
+    
+    def forward(self, notes_payable, accounts_payable, advance_peceipts, taxs_payable, interest_payable, other_payable, other_current_liability):
+        return notes_payable + accounts_payable + advance_peceipts + taxs_payable + interest_payable + other_payable + other_current_liability
+
+class EBIT(Functor):
+    
+    def forward(self, net_profit, income_tax_expense, financial_expense):
+        return net_profit + income_tax_expense + financial_expense
+
+class OperateNetIncome(Functor):
+    
+    def forward(self, total_operating_revenue, total_operating_cost):
+        return total_operating_revenue - total_operating_cost
+
+class EBITDA(Functor):
+    
+    def forward(self, operating_revenue, operating_cost, operating_tax_surcharges):
+        return operating_revenue - operating_cost - operating_tax_surcharges
+    
+class NetDebt(Functor):
+    
+    def forward(self, total_liability, cash_and_equivalents_at_end):
+        return total_liability - cash_and_equivalents_at_end
+
+class NonRecurringGainLoss(Functor):
+    
+    def forward(self, net_profit, adjusted_profit):
+        return net_profit - adjusted_profit
+
+class MarketCap(Functor):
+    
+    def forward(self, close, capitalization):
+        return close * capitalization
+    
+class CashFlowToPriceRatio(Functor):
+    
+    def forward(self, pcf_ratio):
+        return 1/pcf_ratio
+
+class SalesToPriceRatio(Functor):
+    
+    def forward(self, ps_ratio):
+        return 1/ps_ratio
+    
+class FinancialAssets(Functor):
+    
+    def forward(self, cash_equivalents, trading_assets, bill_receivable, interest_receivable, hold_for_sale_assets, hold_to_maturity_investments):
+        return cash_equivalents + trading_assets + bill_receivable + interest_receivable + hold_for_sale_assets + hold_to_maturity_investments
+    
+class OperatingAssets(Functor):
+    
+    def forward(self, total_assets, cash_equivalents, trading_assets, bill_receivable, interest_receivable, hold_for_sale_assets, hold_to_maturity_investments):
+        return total_assets - (cash_equivalents + trading_assets + bill_receivable + interest_receivable + hold_for_sale_assets + hold_to_maturity_investments)
+
+class FinancialLiability(Functor):
+    
+    def forward(self, total_current_liability, accounts_payable, advance_peceipts, salaries_payable, taxs_payable, other_payable, deferred_earning_current, other_current_liability, longterm_loan, bonds_payable):
+        return total_current_liability - accounts_payable - advance_peceipts - salaries_payable - taxs_payable - other_payable - deferred_earning_current - other_current_liability + longterm_loan + bonds_payable
+    
+class OperatingLiability(Functor):
+    
+    def forward(self, total_liability, total_current_liability, accounts_payable, advance_peceipts, salaries_payable, taxs_payable, other_payable, deferred_earning_current, other_current_liability, longterm_loan, bonds_payable):
+        return total_liability - (total_current_liability - accounts_payable - advance_peceipts - salaries_payable - taxs_payable - other_payable - deferred_earning_current - other_current_liability + longterm_loan + bonds_payable)
+
 class AbsAccruals(Functor):
     
     def forward(self, net_profit, net_operate_cash_flow):
