@@ -293,8 +293,8 @@ class DMIRelated(Functor):
         self.timeperiod = timeperiod
     
     def forward(self, tensor_high, tensor_low, tensor_close):
-        PDM, MDM, PDI, MDI, DX, ADX, ADXR = talib_func.dmi(tensor_high, tensor_low, tensor_close, timeperiod=self.timeperiod)
-        return PDM, MDM, PDI, MDI, DX, ADX, ADXR
+        PDM, MDM, PDI, MDI, ADX, ADXR = talib_func.dmi(tensor_high, tensor_low, tensor_close, timeperiod=self.timeperiod)
+        return PDM, MDM, PDI, MDI, ADX, ADXR
 
 class APO(Functor):
     
