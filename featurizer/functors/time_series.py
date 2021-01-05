@@ -78,7 +78,16 @@ class RollingMeanScaledByStd(Functor):
         self._window = window
     
     def forward(self, tensor):
-        return tsf.rolling_mean(tensor, window=self._window) / tsf.rolling_std(tensor, window=self._window) 
+        return tsf.rolling_mean(tensor, window=self._window) / tsf.rolling_std(tensor, window=self._window)
+
+class RollingCorr(Functor):
+    
+    def __init__(self, window):
+        super(RollingCorr, self).__init__()
+        self.window = window
+    
+    def forward(self, tensor_x, tensor_y):
+        return tsf.rolling_corr(tensor_x, tensor_y, window=self.window)
 
 class RollingSkew(Functor):
     
