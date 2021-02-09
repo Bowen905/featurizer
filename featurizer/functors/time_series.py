@@ -136,7 +136,7 @@ class RollingMin(Functor):
         self._window = window
     
     def forward(self, tensor: torch.tensor) -> torch.tensor:
-        return tsf.rolling_min(data_ts = tensor, window = self._window)
+        return tsf.rolling_min(tensor, window = self._window)
     
 class RollingMaxDrawdown(Functor):
     
@@ -154,6 +154,29 @@ class RollingMaxDrawdownFromReturns(Functor):
     def forward(self, tensor: torch.tensor) -> torch.tensor:
         return tsf.rolling_max_drawdown_from_returns(data_ts = tensor, window = self._window)
 
+class RollingQuantile(Functor):
+    
+    def __init__(self, window):
+        self._window = window
+    
+    def forward(self, tensor, qscore):
+        return tsf.rolling_quantile(tensor, window=self._window, qscore=qscore)
+    
+class RollingIdxMax(Functor):
+    
+    def __init__(self, window):
+        self._window = window
+    
+    def forward(self, tensor):
+        return tsf.rolling_idxmax(tensor, widnow=self._window)
+    
+class RollingIdxMin(Functor):
+    
+    def __init__(self, window):
+        self._window = window
+    
+    def forward(self, tensor):
+        return tsf.rolling_idxmin(tensor, window=self._window)
 
 
 if __name__ == "__main__":

@@ -68,8 +68,8 @@ class Alpha009(Functor):
 
     def forward(self, close_ts):
         delta_close = tsf.diff(close_ts, 1)
-        cond_1 = (tsf.rolling_max(delta_close, 5) > 0).squeeze()
-        cond_2 = (tsf.rolling_max(delta_close, 5) < 0).squeeze()
+        cond_1 = tsf.rolling_max(delta_close, 5) > 0
+        cond_2 = tsf.rolling_max(delta_close, 5) < 0
         alpha = -1 * delta_close
         result = torch.where((cond_1 | cond_2), alpha, delta_close)
         return result
@@ -79,8 +79,8 @@ class Alpha010(Functor):
 
     def forward(self, close_ts):
         delta_close = tsf.diff(close_ts, 1)
-        cond_1 = (tsf.rolling_max(delta_close, 4) > 0).squeeze()
-        cond_2 = (tsf.rolling_max(delta_close, 4) < 0).squeeze()
+        cond_1 = tsf.rolling_max(delta_close, 4) > 0
+        cond_2 = tsf.rolling_max(delta_close, 4) < 0
         alpha = -1 * delta_close
         result = torch.where((cond_1 | cond_2), alpha, delta_close)
         return result
@@ -413,9 +413,9 @@ class Alpha054(Functor):
 class Alpha055(Functor):
 
     def forward(self, high_ts, low_ts, close_ts, volume_ts):
-        inner = (tsf.rolling_max(high_ts, 12) - tsf.rolling_min(low_ts, 12)).squeeze()
+        inner = tsf.rolling_max(high_ts, 12) - tsf.rolling_min(low_ts, 12)
         cond = inner == 0
-        constant = 0.0001 * torch.ones_like(high_ts).squeeze()
+        constant = 0.0001 * torch.ones_like(high_ts)
         divisor = torch.where(cond, constant, inner)
         inner_ = (close_ts - tsf.rolling_min(low_ts, 12)) / (divisor)
         ts = tsf.rolling_corr(tsf.rank(inner_), tsf.rank(volume_ts), 6)

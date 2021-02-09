@@ -206,9 +206,9 @@ class BBANDS(Functor):
     def forward(self, tensor):
         upperband_ts, middleband_ts, lowerband_ts = talib_func.bbands(tensor,timeperiod=self.timeperiod, nbdevup = self.nbdevup, nbdevdn=self.nbdevdn, matype=self.matype)
         #pdb.set_trace()
-        upperband_relative_ts = (upperband_ts.squeeze(-1) - tensor)/tensor
-        middleband_relative_ts = (middleband_ts.squeeze(-1) - tensor)/tensor
-        lowerband_relative_ts = (lowerband_ts.squeeze(-1) - tensor)/tensor
+        upperband_relative_ts = (upperband_ts - tensor)/tensor
+        middleband_relative_ts = (middleband_ts - tensor)/tensor
+        lowerband_relative_ts = (lowerband_ts - tensor)/tensor
         return upperband_relative_ts, middleband_relative_ts, lowerband_relative_ts  
 
 class PriceVolume(Functor):

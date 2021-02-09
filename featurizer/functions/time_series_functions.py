@@ -27,10 +27,10 @@ def rolling_sum(tensor, window=1, dim=0):
     ret[:window-1]= float("nan")
     return ret
 
-def rolling_sum_(tensor, window=1, dim=0, min_periods=1):
+def rolling_sum_(tensor, window=1, dim=0):
     tensor_np = tensor.cpu().detach().numpy()
     tensor_df = pd.DataFrame(tensor_np)
-    output_df = tensor_df.rolling(window, min_periods=min_periods).sum()
+    output_df = tensor_df.rolling(window).sum()
     output_tensor = torch.tensor(output_df.values, dtype=tensor.dtype, device=tensor.device)
     return output_tensor
 
@@ -48,17 +48,17 @@ def rolling_mean(tensor, window=1):
     #output = ret/window
     return rolling_mean_(tensor=tensor, window=window)
 
-def rolling_mean_(tensor, window=1, min_periods=1):
+def rolling_mean_(tensor, window=1):
     tensor_np = tensor.cpu().detach().numpy()
     tensor_df = pd.DataFrame(tensor_np)
-    output_df = tensor_df.rolling(window, min_periods=min_periods).mean()
+    output_df = tensor_df.rolling(window).mean()
     output_tensor = torch.tensor(output_df.values, dtype=tensor.dtype, device=tensor.device)
     return output_tensor
 
-def rolling_weighted_mean(tensor, window=1, min_periods=1, halflife=90):
+def rolling_weighted_mean(tensor, window=1, halflife=90):
     tensor_np = tensor.cpu().detach().numpy()
     tensor_df = pd.DataFrame(tensor_np)
-    output_df = tensor_df.rolling(window, min_periods=min_periods).apply(lambda x: weighted_average(x,halflife=halflife))
+    output_df = tensor_df.rolling(window).apply(lambda x: weighted_average(x,halflife=halflife))
     output_tensor = torch.tensor(output_df.values, dtype=tensor.dtype, device=tensor.device)
     return output_tensor
 
@@ -206,13 +206,20 @@ def rolling_median(tensor, window, min_periods=1):
     output_tensor = torch.tensor(output_df.values, dtype=tensor.dtype, device=tensor.device)
     return output_tensor
 
+def rolling_quantile(tensor, window, qscore=0.2, min_periods=1):
+    tensor_np = tensor.cpu().detach().numpy()
+    tensor_df = pd.DataFrame(tensor_np)
+    output_df = tensor_df.rolling(window, min_periods=min_periods).quantile(qscore)
+    output_tensor = torch.tensor(output_df.values, dtype=tensor.dtype, device=tensor.device)
+    return output_tensor
+
 def rolling_rank(np_data):
     return rankdata(np_data,method='min')[-1]
 
-def ts_rank(tensor, window=10):
+def ts_rank(tensor, window=10, min_periods=1):
     tensor_np = tensor.cpu().detach().numpy()
     data_df=pd.DataFrame(tensor_np)
-    output_df = data_df.rolling(window).apply(rolling_rank, raw=False)
+    output_df = data_df.rolling(window, min_periods=min_periods).apply(rolling_rank, raw=False)
     output_np= np.array(output_df)
     output_tf=torch.tensor(output_np)
     return output_tf
@@ -225,6 +232,22 @@ def rank(tensor, axis=1, pct=True):
     output_tensor = torch.tensor(output_np)
     return output_tensor
 
+def rank_q(np_data):
+    from scipy.stats import percentileofscore
+    if np.isnan(np_data[-1]):
+        return np.nan
+    np_data_1 = np_data[~np.isnan(np_data)]
+    if np_data_1[0] == 0:
+        return np.nan
+    return percentileofscore(np_data_1, np_data_1[-1]) / len(np_data_1)
+
+def rolling_rank_q(tensor, window=10, min_periods=1):
+    tensor_np = tensor.cpu().detach().numpy()
+    tensor_df = pd.DataFrame(tensor_np)
+    output_df = tensor_df.rolling(window, min_periods=min_periods).apply(rank_q, raw=True)
+    output_tensor = torch.tensor(output_df.values, dtype=tensor.dtype, device=tensor.device)
+    return output_tensor
+
 def rolling_scale(data_ts, window=10, k=1):
     output_tensor = k * data_ts / rolling_sum_(torch.abs(data_ts), window=window)
     return output_tensor
@@ -232,23 +255,37 @@ def rolling_scale(data_ts, window=10, k=1):
 def rolling_argmax(np_data):
     return pd.DataFrame(np_data).idxmax()
 
-def ts_argmax(tensor,window=10):
+def ts_argmax(tensor,window=10, min_periods=1):
     tensor_np = tensor.cpu().detach().numpy()
     data_df = pd.DataFrame(tensor_np)
-    output_df = data_df.rolling(window).apply(rolling_argmax)
+    output_df = data_df.rolling(window, min_periods=min_periods).apply(rolling_argmax)
     output_np = np.array(output_df)
     output_tensor = torch.tensor(output_np).squeeze()
+    return output_tensor
+
+def rolling_idxmax(tensor, window=10, min_periods=1):
+    tensor_np = tensor.cpu().detach().numpy()
+    data_df = pd.DataFrame(tensor_np)
+    output_df = data_df.rolling(window, min_periods=min_periods).applya(lambda x: x.argmax()+1, raw=True)
+    output_tensor = torch.tensor(output_df.values, dtype=tensor.dtype, device=tensor.device)
     return output_tensor
 
 def rolling_argmin(np_data):
     return pd.DataFrame(np_data).idxmin()
 
-def ts_argmin(tensor,window=10):
+def ts_argmin(tensor,window=10, min_periods=1):
     tensor_np = tensor.cpu().detach().numpy()
     data_df = pd.DataFrame(tensor_np)
-    output_df = data_df.rolling(window).apply(rolling_argmin)
+    output_df = data_df.rolling(window, min_periods=min_periods).apply(rolling_argmin)
     output_np = np.array(output_df)
     output_tensor = torch.tensor(output_np).squeeze()
+    return output_tensor
+
+def rolling_idxmin(tensor, window=10, min_periods=1):
+    tensor_np = tensor.cpu().detach().numpy()
+    data_df = pd.DataFrame(tensor_np)
+    output_df = data_df.rolling(window, min_periods=min_periods).apply(lambda x: x.argmin()+1, raw=True)
+    output_tensor = torch.tensor(output_df.values, dtype=tensor.dtype, device=tensor.device)
     return output_tensor
 
 

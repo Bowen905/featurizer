@@ -103,9 +103,9 @@ def bbands(tensor, timeperiod=5, nbdevup=2, nbdevdn=2, matype=0):
 
 def kdj(high_ts, low_ts, close_ts, fastk_period=9, slowk_period=3, slowd_period=3):
     range_ts = tsf.rolling_max(high_ts, window=fastk_period) - tsf.rolling_min(low_ts, window=fastk_period)
-    RSV = (close_ts - tsf.rolling_min(low_ts, fastk_period).squeeze(-1)) / torch.clamp(range_ts.squeeze(-1),min=1)
-    K = tsf.ema(RSV, window=slowk_period).squeeze(-1) 
-    D = tsf.ema(K, slowd_period).squeeze(-1)
+    RSV = (close_ts - tsf.rolling_min(low_ts, fastk_period)) / torch.clamp(range_ts, min=1)
+    K = tsf.ema(RSV, window=slowk_period)
+    D = tsf.ema(K, slowd_period)
     J = 3*K - 2*D
     return RSV, K, D, J
 
