@@ -195,6 +195,54 @@ def forecast_residual3d(x_tensor, y_tensor, window_train=10, window_test=5, keep
     return output
 
 
+def get_cross_sectional_coef(x,y, fit_intercept = False):
+    # y is N * S like
+    # x is N * S * f like 
+    # where N is dates, S is stocks, f is factor of style or industries
+    nan_num= torch.isnan(x).sum() + torch.isnan(y).sum()
+    inf = torch.isinf(x).any() or torch.isinf(y).any()
+    if nan_num > 0 or inf:
+        raise RuntimeError("Input tensors contain 'nan' or 'infinity'. Please process them.")
+    
+    y = y . unsqueeze(-1)
+    if fit_intercept == True:
+        one_arr_ts = torch.ones((*x.shape[:-1],1), device=x.device)
+        X = torch.cat( (one_arr_ts, x), 2 )
+    else:
+        X = x
+    mpinv = torch.pinverse(X)
+    param  = mpinv.matmul(y)
+    return param.squeeze(-1)
+
+
+def get_cross_sectional_residual(x, y, fit_intercept = False):
+    
+    # y is N * S like
+    # x is N * S * f like 
+    # where N is dates, S is stocks, f is factor of style or industries
+    nan_num= torch.isnan(x).sum() + torch.isnan(y).sum()
+    inf = torch.isinf(x).any() or torch.isinf(y).any()
+    if nan_num > 0 or inf:
+        raise RuntimeError("Input tensors contain 'nan' or 'infinity'. Please process them.")
+    
+    y = y . unsqueeze(-1)
+    if fit_intercept == True:
+        one_arr_ts = torch.ones((*x.shape[:-1],1), device=x.device)
+        X = torch.cat( (one_arr_ts, x), 2 )
+    else:
+        X = x
+    mpinv = torch.pinverse(X)
+    param  = mpinv.matmul(y)
+    
+    y_hat = X.matmul (param)
+    
+    res = y - y_hat
+    res = res.squeeze()
+    return res
+    
+    
+    
+
 if __name__ == "__main__":
     import time
     np.random.seed(123)
