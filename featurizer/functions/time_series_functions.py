@@ -185,6 +185,14 @@ def ema(tensor, window):
     output_tensor = torch.tensor(output_df.values, dtype=tensor.dtype, device=tensor.device)
     return output_tensor
 
+def ema_(tensor, window):
+    tensor_np = tensor.cpu().detach().numpy()
+    output = tensor_np[0]
+    for i in range(1, window):
+        output = (2/(window+1))*(tensor_np[i]-output)+output
+    output_tensor = torch.tensor(output, dtype=tensor.dtype, device=tensor.device)
+    return output_tensor
+
 def rolling_min(tensor, window):
     tensor_np = tensor.cpu().detach().numpy()
     tensor_df = pd.DataFrame(tensor_np)
@@ -266,7 +274,7 @@ def ts_argmax(tensor,window=10, min_periods=1):
 def rolling_idxmax(tensor, window=10, min_periods=1):
     tensor_np = tensor.cpu().detach().numpy()
     data_df = pd.DataFrame(tensor_np)
-    output_df = data_df.rolling(window, min_periods=min_periods).applya(lambda x: x.argmax()+1, raw=True)
+    output_df = data_df.rolling(window, min_periods=min_periods).apply(lambda x: x.argmax()+1, raw=True)
     output_tensor = torch.tensor(output_df.values, dtype=tensor.dtype, device=tensor.device)
     return output_tensor
 

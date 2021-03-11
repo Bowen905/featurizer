@@ -18,6 +18,7 @@
 import pdb
 import torch
 import pandas as pd
+import numpy as np
 import featurizer.functions.time_series_functions as tsf
 
 def macd(tensor, fastperiod=12, slowperiod=26, signalperiod=9):
@@ -39,6 +40,25 @@ def macd(tensor, fastperiod=12, slowperiod=26, signalperiod=9):
 
     return DIF, DEA, MACD
 
+def macd_(tensor, fastperiod=12, slowperiod=26, signalperiod=9):
+    tensor_np = tensor.cpu().detach().numpy()
+    tensor_df = pd.DataFrame(tensor_np)
+    datas = pd.Series(tensor_df[0].values)
+    DIF = [0]*slowperiod
+    for i in range(slowperiod, len(tensor_np)):
+        dif = tsf.ema_(torch.tensor(datas[i-fastperiod:i].values), fastperiod) - tsf.ema_(torch.tensor(datas[i-slowperiod:i].values), slowperiod)
+        DIF.append(dif)
+    
+    DEA = [0]*(slowperiod+signalperiod)
+    MACD = [np.nan]*(slowperiod+signalperiod)
+    for i in range(slowperiod+signalperiod, len(tensor_np)):
+        dea = tsf.ema_(torch.tensor(DIF[i-signalperiod:i]), signalperiod)
+        DEA.append(dea)
+        macd = 2*(DIF[i]-DEA[i])
+        MACD.append(macd)
+    MACD_ts = torch.tensor(MACD, dtype=tensor.dtype, device=tensor.device)
+    return MACD_ts
+        
 
 def macdext(close_ts, fastperiod=12, fastmatype=0, slowperiod=26, slowmatype=0, signalperiod=9, signalmatype=0):
     import talib
@@ -135,6 +155,25 @@ def natr(high_ts, low_ts, close_ts, timeperiod=14):
     TRange_min = tsf.rolling_min(true_range, window=timeperiod)
     natr = tsf.rolling_mean_((true_range - TRange_min) / (TRange_max - TRange_min), window=timeperiod)
     return natr
+
+def diff(close_ts, timeperiod=12):
+    diff = close_ts - tsf.rolling_mean_(tsf.shift(close_ts, timeperiod), timeperiod)
+    return diff
+
+def diff_(close_ts, timeperiod=12, max_diff_length=12):
+    close_np = close_ts.cpu().detach().numpy()
+    close_df = pd.DataFrame(close_np)
+    output_df = pd.DataFrame(index=list(close_df.iloc[timeperiod-1:].index), columns=['signal'])
+    if timeperiod <= max_diff_length:
+        for i in range(len(output_df)):
+            sums = 0
+            for j in range(timeperiod):
+                sums = sums + close_df.iloc[i+timeperiod-1].values[0] - close_df.iloc[i+j].values[0]
+            output_df.iloc[i] = sums / timeperiod
+    else:
+        print("window size should be less than or equal to", max_diff_length)
+    output_ts = torch.tensor(np.array(output_df.values, dtype='float64'), dtype=close_ts.dtype, device=close_ts.device)
+    return output_ts
 
 def dmi(high_ts, low_ts, close_ts, timeperiod=14):
     zero = torch.zeros_like(high_ts)
@@ -290,6 +329,11 @@ def wma(close_ts, timeperiod=30):
     wma = close_df.apply(lambda x: talib.WMA(x, timeperiod=30))
     wma_ts = torch.tensor(wma.values, dtype=close_ts.dtype, device=close_ts.device)
     return wma_ts
+
+def dpo(close_ts, timeperiod=20):
+    ma = tsf.rolling_mean_(close_ts, window=timeperiod)
+    dpo = close_ts - tsf.shift(ma, int(timeperiod/2+1))
+    return dpo
 
 def ad(high_ts, low_ts, close_ts, volume_ts, timeperiod=5, fastperiod=3, slowperiod=10):
     zero = torch.zeros_like(high_ts, dtype=high_ts.dtype, device=high_ts.device)

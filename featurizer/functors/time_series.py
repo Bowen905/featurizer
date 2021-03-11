@@ -168,7 +168,7 @@ class RollingIdxMax(Functor):
         self._window = window
     
     def forward(self, tensor):
-        return tsf.rolling_idxmax(tensor, widnow=self._window)
+        return tsf.rolling_idxmax(tensor, window=self._window)
     
 class RollingIdxMin(Functor):
     

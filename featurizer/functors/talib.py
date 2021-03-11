@@ -287,6 +287,16 @@ class NATR(Functor):
         NATR = talib_func.natr(tensor_high, tensor_low, tensor_close, timeperiod=self.timeperiod)
         return NATR
 
+class DIFF(Functor):
+    
+    def __init__(self, timeperiod1=5, timeperiod2=12):
+        self.timeperiod1 = timeperiod1
+        self.timeperiod2 = timeperiod2
+        
+    def forward(self, tensor_close):
+        DIFF = talib_func.diff(tensor_close, timeperiod1=self.timeperiod1, timeperiod2=self.timeperiod2)
+        return DIFF
+
 class DMIRelated(Functor):
     
     def __init__(self, timeperiod=14):
@@ -445,6 +455,15 @@ class WMA(Functor):
     def forward(self, tensor_close):
         WMA = talib_func.wma(tensor_close, timeperiod=self.timeperiod)
         return WMA
+    
+class DPO(Functor):
+    
+    def __init__(self, timeperiod=20):
+        self.timeperiod = timeperiod
+    
+    def forward(self, tensor_close):
+        DPO = talib_func.dpo(tensor_close, timeperiod=self.timeperiod)
+        return DPO
 
 class ADRelated(Functor):
     
